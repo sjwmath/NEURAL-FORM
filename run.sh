@@ -23,4 +23,8 @@ MODEL_PATH="$(.venv/bin/python -c 'import flyvis; print(flyvis.results_dir / "fl
 if [[ ! -e "$MODEL_PATH" ]]; then
   .venv/bin/flyvis download-pretrained
 fi
-.venv/bin/python -m src.main --images "${IMAGES:-5}" --permutations "${PERMUTATIONS:-999}"
+RUN_ARGS=(--images "${IMAGES:-5}" --permutations "${PERMUTATIONS:-999}")
+if [[ "${TRAIN_MAPPER:-0}" == "1" ]]; then
+  RUN_ARGS+=(--train-mapper)
+fi
+.venv/bin/python -m src.main "${RUN_ARGS[@]}"

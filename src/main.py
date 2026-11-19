@@ -16,14 +16,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Exploratory FlyVis–THINGS-EEG2 image-level RSA")
     parser.add_argument("--images", type=int, default=N_IMAGES, help="Number of test images (minimum 3)")
     parser.add_argument("--permutations", type=int, default=PERMUTATIONS)
+    parser.add_argument("--train-mapper", action="store_true",
+                        help="Train and image-level cross-validate FlyVis-to-EEG kernel ridge mapping (needs >=20 images)")
     args = parser.parse_args()
     if args.images < 3:
         parser.error("--images must be >= 3")
+    if args.train_mapper and args.images < 20:
+        parser.error("--train-mapper needs --images >= 20; use >=100 for a more useful first pilot.")
     diagnose()
     # Import the heavier analysis modules only after the environment check gives actionable feedback.
     import numpy as np
     import pandas as pd
     from src.data_access import load_dataset_subset
+    from src.cross_species_model import train_and_evaluate
     from src.eeg_loader import extract_eeg_features
     from src.flyvis_loader import extract_flyvis_features
     from src.rsa import correlation_rdm
@@ -68,6 +73,18 @@ def main() -> None:
     (report_dir / "rsa_result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     pd.DataFrame({"image_id": eeg_ids, "EEG_trials": [trial_counts[k] for k in eeg_ids]}).to_csv(
         report_dir / "included_images.csv", index=False)
+    if args.train_mapper:
+        if len(eeg_ids) < 20:
+            raise RuntimeError(f"Only {len(eeg_ids)} images have EEG features; mapper requires at least 20.")
+        mapper_report, mapper_artifact = train_and_evaluate(
+            fly_features, eeg_features, folds=5, alpha=1.0, seed=RANDOM_SEED)
+        mapper_report["image_ids"] = eeg_ids
+        (report_dir / "cross_species_mapper_cv.json").write_text(
+            json.dumps(mapper_report, indent=2), encoding="utf-8")
+        np.savez_compressed(feature_dir / "cross_species_mapper.npz",
+                            image_ids=np.asarray(eeg_ids), **mapper_artifact)
+        print("Cross-species mapper CV:")
+        print(json.dumps(mapper_report, indent=2))
     print(json.dumps(result, indent=2))
     print(f"Saved results under {RESULTS_DIR}")
 

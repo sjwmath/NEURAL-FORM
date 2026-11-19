@@ -1,5 +1,6 @@
 param(
     [switch]$Install,
+    [switch]$TrainMapper,
     [int]$Images = 5,
     [int]$Permutations = 999
 )
@@ -36,5 +37,7 @@ if (-not (Test-Path $ModelPath)) {
     & $FlyvisExe download-pretrained
     if ($LASTEXITCODE -ne 0) { throw "FlyVis pretrained model download failed." }
 }
-& $VenvPython -m src.main --images $Images --permutations $Permutations
+$RunArgs = @('-m', 'src.main', '--images', $Images, '--permutations', $Permutations)
+if ($TrainMapper) { $RunArgs += '--train-mapper' }
+& $VenvPython @RunArgs
 if ($LASTEXITCODE -ne 0) { throw "NEURAL FORM run failed. Read the error above; no RSA result is valid unless the run completes." }

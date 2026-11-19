@@ -4,6 +4,16 @@
 
 각 이미지 i에 대해 FlyVis의 뉴런 활동 특징 `F_i`와 EEG 특징 `E_i`를 만듭니다. 각 특징 공간 안에서 이미지 쌍 간 correlation distance를 계산해 `R_F`, `R_E`를 얻고, 상삼각 원소의 Spearman 상관을 요약합니다. EEG 채널과 FlyVis 세포는 일대일로 대응시키지 않습니다.
 
+## FlyVis → EEG 매핑
+
+추가 학습 목표는 `F_i → E_i`입니다. 즉, 이미지 자극과 FlyVis 반응을 입력으로 받아 인간 EEG 채널 특징을 예측합니다. 첫 baseline은 선형 kernel ridge regression입니다. 고차원 FlyVis 세포 특징을 직접 거대한 가중치 행렬로 풀지 않고, 이미지 수 크기의 dual kernel 행렬을 풉니다.
+
+- 5-fold 분할 단위는 이미지 ID입니다. 같은 이미지의 여러 EEG 시행은 fold 분할 전에 평균하므로 반복 시행이 train/test에 나뉘지 않습니다.
+- 각 fold의 FlyVis feature 평균·표준편차 및 EEG target 평균·표준편차는 학습 이미지에서만 계산합니다.
+- `alpha=1.0`을 첫 실행에 고정하고, train-fold 평균 EEG 예측을 baseline으로 둡니다.
+- 평가 지표는 EEG 채널별 Pearson 상관 평균, 채널별 R² 평균, MSE입니다. 교차검증 예측을 함께 저장해 이후 분석을 확인할 수 있게 합니다.
+- 현재 파일럿은 데이터셋이 지정한 test 이미지 200개 중 선택한 부분집합에서 내부 이미지 CV를 합니다. 이는 공식 benchmark test가 아니며, 점수는 모델 탐색에만 사용합니다. 후속 성능 주장은 별도 학습 이미지 pool과 사전 지정 독립 holdout으로 검증해야 합니다.
+
 ## 입력과 전처리
 
 - 자극 이미지: grayscale, 64×64, [0,1] 정규화. FlyVis BoxEye(공식 예제의 extent=15, kernel_size=13)에 전달합니다.
