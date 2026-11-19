@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.py[cod]
+data/raw/*
+data/stimuli/*
+!data/raw/.gitkeep
+!data/stimuli/.gitkeep
+results/features/*
+results/figures/*
+results/reports/*
+!results/features/.gitkeep
+!results/figures/.gitkeep
+!results/reports/.gitkeep
